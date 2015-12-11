@@ -1,0 +1,9 @@
+Bounding Boxes Yay (xpos ypos xlen ylen tag)
+5
+6
+127 100 5   211 null
+67  306 5   93  null
+186 124 28  30  null
+266 124 28  31  null
+346 124 28  30  null
+346 204 28  30  null

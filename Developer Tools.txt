@@ -1,0 +1,7 @@
+Developer Controls:
+Ctr q - Enter and exit edit mode
+E - Export map
+R - Export compressed map
+T - Toggle decoration editing
+Y - Export decorations
+Z/X - Decrease/Increase tile ID
