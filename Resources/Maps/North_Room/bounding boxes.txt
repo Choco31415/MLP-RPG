@@ -1,0 +1,10 @@
+Bounding Boxes Yay (xpos ypos xlen ylen tag)
+5
+7
+127 100 5   211 null
+67  306 5   93  null
+186 124 28  34  null
+266 124 28  34  null
+346 124 28  34  null
+346 204 28  34  null
+160 380 40  20  ignore goto down Enterance 15 390

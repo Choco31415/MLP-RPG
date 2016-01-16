@@ -19,7 +19,7 @@ public class Game {
 		
 		//A JFrame is a window with decorations such as a border, title, and button components.
 		
-		window = new JFrame("Platformer AI Test");
+		window = new JFrame("MLP RPG");
 		final GamePanel gamePane = new GamePanel(window);
 		window.setContentPane(gamePane);
 		window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

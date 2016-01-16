@@ -6,10 +6,13 @@ import java.util.ArrayList;
 import javax.imageio.ImageIO;
 
 import Entity.Player;
+import Entity.SimplePonCharacter;
 import TileMap.TileMap;
 import TileMap.TileMapWithBB;
 
 public class RPGState extends MapState {
+	
+	ArrayList<SimplePonCharacter> pons = new ArrayList<SimplePonCharacter>();
 
 	public RPGState(GameStateManager gsm_) {
 		super(gsm_);
@@ -21,7 +24,7 @@ public class RPGState extends MapState {
 		//Other stuff
 		tileMap = new TileMapWithBB(20);
 		tileMap.loadTilesetLazy("galatileset");
-		tileMap.loadSceneLazy("North Room", 1);
+		tileMap.loadSceneLazy("Enterance", 1);
 		tileMap.setPosition(100, 0);
 		
 		try {
@@ -40,5 +43,7 @@ public class RPGState extends MapState {
 
 		player = new Player(tileMap, this);
 		player.setPosition(50, 310);
+		
+		pons.add(new SimplePonCharacter());
 	}
 }

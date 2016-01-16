@@ -8,6 +8,7 @@ import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.ArrayList;
 
 import javax.swing.JOptionPane;
@@ -17,6 +18,9 @@ import Entity.MapObject;
 /*
  * Layer0 - images to lay on top of the map
  * Layer1 - images that sort and overlap with map objects
+ * 
+ * BB:
+ * Include "ignore" in the tag to have the BB be ignored for collision purposes
  */
 public class TileMapWithBB extends TileMap {
 
@@ -47,6 +51,36 @@ public class TileMapWithBB extends TileMap {
 		return null;
 	}
 	
+	public ArrayList<BoundingBox> getBoundingBoxesWhoseTagContains(String st) {
+		ArrayList<BoundingBox> toReturn = new ArrayList<BoundingBox>();
+		
+		for (BoundingBox bb : boundingBoxes) {
+			if (bb.getTag().contains(st)) {
+				toReturn.add(bb);
+			}
+		}
+		
+		return toReturn;
+	}
+	
+	public ArrayList<BoundingBox> getBoundingBoxesWhoseTagContains(ArrayList<String> sts) {
+		ArrayList<BoundingBox> toReturn = new ArrayList<BoundingBox>();
+		
+		for (BoundingBox bb : boundingBoxes) {
+			boolean success = true;
+			for (String st : sts) {
+				if (!bb.getTag().contains(st)) {
+					success = false;
+				}
+			}
+			if (success) {
+				toReturn.add(bb);
+			}
+		}
+		
+		return toReturn;
+	}
+	
 	public int getBoundingBoxIndex(String tag) {
 		for (int i = 0; i < boundingBoxes.size(); i++) {
 			if (boundingBoxes.get(i).getTag().equals(tag)) {
@@ -59,17 +93,47 @@ public class TileMapWithBB extends TileMap {
 	/*
 	 * Load map and decor files given they follow a naming convention.
 	 */
+	public void createNewRoomFilesIfNeeded(String sceneName) {
+		File folderLoc = new File("Resources/Maps/" + sceneName + "/");
+
+		// if the directory does not exist, create it
+		if (!folderLoc.exists()) {
+			folderLoc.mkdir();
+			String map2 = "Map Yay\n2\n2\n1 1\n1 1";
+			writeFile(map2, "Resources/Maps/" + sceneName + "/room.txt");
+			String decor = "Decor Yay (xpos, ypos, tileID, layer)\n0\n0";
+			writeFile(decor, "Resources/Maps/" + sceneName + "/decor.txt");
+			String bb = "Bounding Boxes Yay (xpos ypos xlen ylen tag)\n0\n0";
+			writeFile(bb, "Resources/Maps/" + sceneName + "/bounding boxes.txt");
+		}
+	}
+	
 	@Override
 	public void loadSceneLazy(String sceneName, int numMaps) {
-		super.loadSceneLazy(sceneName, numMaps);
-		loadBB("/Maps/" + sceneName + " bounding boxes.txt");
+		if (numMaps <= 0) {
+			throw new Error();
+		}
+		ArrayList<String> mapFiles_ = new ArrayList<String>();
+		
+		if (numMaps == 1) {
+			mapFiles_.add("/Maps/" + sceneName + "/room.txt");
+		} else {
+			for (int i = 0; i < numMaps; i++) {
+				mapFiles_.add("/Maps/" + sceneName + "/room_" + (i+1) + ".txt");
+			}
+		}
+		
+		loadMaps(mapFiles_);
+		mapFiles = mapFiles_;
+		loadDecor("/Maps/" + sceneName + "/decor.txt");
+		loadBB("/Maps/" + sceneName + "/bounding boxes.txt");
 	}
 	
 	protected void loadBB(String bbFile_) {
 		bbFile = bbFile_;
 		boundingBoxes = new ArrayList<BoundingBox>();
 		
-		String[][] tempData = parseFileAsStrings(bbFile_, 1);
+		String[][] tempData = parseFileAsStrings(bbFile_, 1, true);
 		
 		for (int row = 0; row < tempData.length; row++) {
 			int[] tempData2 = new int[4];
@@ -169,6 +233,8 @@ public class TileMapWithBB extends TileMap {
 			} else {
 				editingMode = 2;
 			}
+		} else if (k == KeyEvent.VK_H && editing) {
+			createNewRoomFilesIfNeeded("pie");
 		}
 	}
 	@Override
@@ -381,7 +447,7 @@ public class TileMapWithBB extends TileMap {
 
 			String tag = bb.getTag();
 			itemLength = tag.length();
-			dataPoint = "" + tag + new String(new char[longestItem + 1 - itemLength]).replace("\0", " ");
+			dataPoint = "" + tag;
 			file += dataPoint;
 			
 			file += line + "\n";

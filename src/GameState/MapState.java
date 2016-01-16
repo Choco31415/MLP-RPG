@@ -3,6 +3,7 @@ package GameState;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
@@ -39,7 +40,6 @@ public abstract class MapState extends GameState {
 	protected Player player;
 	protected boolean readFromKeyboard;
 	
-	protected ArrayList<Enemy> enemies = new ArrayList<Enemy>();
 	protected ArrayList<Projectile> projectiles = new ArrayList<Projectile>();
 	
 	protected AudioPlayer bgMusic;
@@ -62,6 +62,11 @@ public abstract class MapState extends GameState {
 	boolean up;
 	boolean down;
 	
+	//For transitions
+	boolean transitioning = false;
+	double transitionLength = 0;
+	int transitionFrame = 0;
+	
 	public MapState(GameStateManager gsm_) {
 		gsm = gsm_;
 		
@@ -75,74 +80,60 @@ public abstract class MapState extends GameState {
 
 	@Override
 	public boolean update() {
-		if (!editingTileMap) {
-			frame++;
-			
-			if (winState != -1) {
-				player.update();
-			}
-			
-			if (player.getDead() && winState == 0) {
-				winState = -1;
-				frame = 0;
-			}
-			if (winState == -1 && frame >= deathSceneLength*GamePanel.IDEAL_FPS) {
-				return true;
-			}
-			
-			for (int i = 0; i < enemies.size(); i++) {
-				Enemy e = enemies.get(i);
-				e.update();
-				if (e.isDead()) {
-					enemies.remove(e);
-					i--;
+		if (!transitioning) {
+			if (!editingTileMap) {
+				frame++;
+				
+				if (winState != -1) {
+					player.update();
 				}
-			}
-			
-			boolean collided;
-			ArrayList<Projectile> toRemove = new ArrayList<Projectile>();
-			for (Projectile fb : projectiles) {
-				collided = fb.update();
-				if (collided) {
-					toRemove.add(fb);
+				
+				if (player.getDead() && winState == 0) {
+					winState = -1;
+					frame = 0;
 				}
-			}
-			for (Projectile p : toRemove) {
-				projectiles.remove(p);
-			}
-			
-			if (winState == 1) {
-				if (player.getdy() == 0) {
-					player.setRight(true);
-				}
-				if (player.getx() > tileMap.getWidth() - tileMap.getTileSize()) {
+				if (winState == -1 && frame >= deathSceneLength*GamePanel.IDEAL_FPS) {
 					return true;
 				}
+				
+				boolean collided;
+				ArrayList<Projectile> toRemove = new ArrayList<Projectile>();
+				for (Projectile fb : projectiles) {
+					collided = fb.update();
+					if (collided) {
+						toRemove.add(fb);
+					}
+				}
+				for (Projectile p : toRemove) {
+					projectiles.remove(p);
+				}
+				
+				if (winState == 1) {
+					if (player.getdy() == 0) {
+						player.setRight(true);
+					}
+					if (player.getx() > tileMap.getWidth() - tileMap.getTileSize()) {
+						return true;
+					}
+				}
+			} else {
+				int vel = 6;
+				if (up) {
+					tileMap.changePosition(0, -vel);
+				} else if (down) {
+					tileMap.changePosition(0, vel);
+				}
+				if (left) {
+					tileMap.changePosition(-vel, 0);
+				} else if (right) {
+					tileMap.changePosition(vel, 0);
+				}
+				
+				setMapPositions();
 			}
 		} else {
-			int vel = 6;
-			if (up) {
-				tileMap.changePosition(0, -vel);
-			} else if (down) {
-				tileMap.changePosition(0, vel);
-			}
-			if (left) {
-				tileMap.changePosition(-vel, 0);
-			} else if (right) {
-				tileMap.changePosition(vel, 0);
-			}
-			
-			player.setMapPosition();
-			
-			for (Projectile p: projectiles) {
-				p.setMapPosition();
-			}
-			
-			for (Enemy e : enemies) {
-				e.setMapPosition();
-			}
-			
-			tileMap.update();
+			player.scroll();
+			setMapPositions();
 		}
 		
 		return false;
@@ -181,16 +172,10 @@ public abstract class MapState extends GameState {
 			}
 		}
 		
-		for (Enemy enemy : enemies) {
-			if (doingScreenshot) {
-				enemy.setMapPosition();
-			}
-		}
-		
 		drawLayers(g, doingScreenshot, 0, 2);
 		previousLayer = 2;
 		if (!doingScreenshot) {
-			tileMap.draw(g, GamePanel.WIDTH, GamePanel.HEIGHT, -2, 2, -1, 4, getMapObjects());
+			tileMap.draw(g, GamePanel.WIDTH, GamePanel.HEIGHT, -2, 2, -1, 8, getMapObjects());
 		} else {
 			tileMap.draw(g, tileMap.getWidth(), tileMap.getHeight(), 0, 0, 0, 0, getMapObjects());
 		}
@@ -200,6 +185,29 @@ public abstract class MapState extends GameState {
 		//If done with a screenshot, undo changes made to obtain the screenshot.
 		if (doingScreenshot) {
 			tileMap.setPosition(oldX, oldY);
+		}
+		
+		if (transitioning) {
+			transitionFrame++;
+			int frameLength = (int)(GamePanel.FPS*transitionLength);
+			int halfFrameLength = frameLength / 2;
+			Color color;
+			if (transitionFrame > frameLength / 2) {
+				int frameResidual = frameLength - transitionFrame;
+				color = new Color(0, 0, 0, (frameResidual*(255/halfFrameLength)));
+				if (!(transitionFrame - 1 > frameLength / 2)) {
+					player.transition();
+					color = Color.black;
+				}
+			} else {
+				color = new Color(0, 0, 0, (transitionFrame*(255/halfFrameLength)));
+			}
+			g.setColor(color);
+			g.fill(new Rectangle(0, 0, GamePanel.WIDTH, GamePanel.HEIGHT));
+			if (transitionFrame == frameLength) {
+				transitioning = false;
+				transitionFrame = 0;
+			}
 		}
 	}
 	
@@ -221,7 +229,6 @@ public abstract class MapState extends GameState {
 	protected ArrayList<MapObject> getMapObjects() {
 		ArrayList<MapObject> toReturn = new ArrayList<MapObject>();
 		toReturn.add(player);
-		toReturn.addAll(enemies);
 		toReturn.addAll(projectiles);
 		return toReturn;
 	}
@@ -236,6 +243,8 @@ public abstract class MapState extends GameState {
 		
 		if ((k == KeyEvent.VK_Q && lastKeyPress == KeyEvent.VK_P) || (k == KeyEvent.VK_P && lastKeyPress == KeyEvent.VK_Q)) {
 			toggleEditingMap();
+		} else if ((k == KeyEvent.VK_O && lastKeyPress == KeyEvent.VK_P) || (k == KeyEvent.VK_P && lastKeyPress == KeyEvent.VK_O)) {
+			System.out.println(player.getx() + ":" + player.gety());
 		}
 		
 		tileMap.keyPressed(k);
@@ -299,10 +308,6 @@ public abstract class MapState extends GameState {
 		readFromKeyboard = bool;
 	}
 	
-	public ArrayList<Enemy> getEnemies() {
-		return enemies;
-	}
-	
 	public ArrayList<Projectile> getProjectiles() {
 		return projectiles;
 	}
@@ -336,7 +341,6 @@ public abstract class MapState extends GameState {
 	}
 	
 	public void reset() {
-		enemies = new ArrayList<Enemy>();
 		projectiles = new ArrayList<Projectile>();
 		
 		tileMap.reset();
@@ -383,5 +387,20 @@ public abstract class MapState extends GameState {
 		} catch (IOException e) {
 		    e.printStackTrace();
 		}
+	}
+	
+	public void transition(double length) {
+		transitioning = true;
+		transitionLength = length;
+	}
+	
+	public void setMapPositions() {
+		player.setMapPosition();
+		
+		for (Projectile p: projectiles) {
+			p.setMapPosition();
+		}
+		
+		tileMap.update();
 	}
 }

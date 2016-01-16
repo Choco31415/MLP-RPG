@@ -1,6 +1,7 @@
 package Entity;
 
 import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
@@ -10,6 +11,8 @@ import GameState.GameState;
 import GameState.MapState;
 import Main.GamePanel;
 import TileMap.BoundingBox;
+import TileMap.Decoration;
+import TileMap.Tile;
 import TileMap.TileMap;
 import TileMap.TileMapWithBB;
 
@@ -350,6 +353,9 @@ public class MapObject {
 		}
 		
 		for (int i = 0; i < bbs.size(); i++) {
+			if (bbs.get(i).getTag().contains("ignore")) {
+				continue;
+			}
 			Rectangle rect = bbs.get(i).getRectangle();
 			if (rect.contains(p1) || rect.contains(p2)) {
 				return bbs.get(i);
@@ -440,24 +446,39 @@ public class MapObject {
 	public double getx() { return x; }
 	public double gety() { return y; }
 	public double getBottomy() { return y + cheight/2; }
+	public double getVisualBottomy() { return y + height/2 + yOffset; }
 	public int getWidth() { return width; }
 	public int getHeight() { return height; }
 	public int getCWidth() { return cwidth; }
 	public int getCHeight() { return cheight; }
+	public int getXOffset() { return xOffset; }
+	public int getYOffset() { return yOffset; }
 	
 	public void setPosition(double x_, double y_) {
 		x = x_;
 		y = y_;
 		if (x < cwidth/2) {
 			x = cwidth/2;
+			if (dx < 0) {
+				collided = true;
+			}
 		} else if (x > tileMap.getWidth() - cwidth/2) {
 			x = tileMap.getWidth() - cwidth/2;
+			if (dx > 0) {
+				collided = true;
+			}
 		}
 		
 		if (y < cheight/2) {
 			y = cheight/2;
+			if (dy < 0) {
+				collided = true;
+			}
 		} else if (y >= tileMap.getHeight() - cheight/2) {
 			y = tileMap.getHeight() - cheight/2;
+			if (dy > 0) {
+				collided = true;
+			}
 		}
 		
 	}
@@ -502,4 +523,11 @@ public class MapObject {
 		}
 	}
 	
+	public void draw(Graphics2D g, Rectangle clip) {
+		g.setClip(clip);
+
+		draw(g);
+		
+		g.setClip(null);
+	}
 }

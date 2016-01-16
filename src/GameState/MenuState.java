@@ -137,7 +137,7 @@ public class MenuState extends GameState {
 					options = new String[]{"Hit enter to go back"};
 				} else if (selection == 2) {
 					String help = "Developer Controls:";
-					String[] lines = new String[]{ "1/2 - Stratify on the X/Y axis", "R - Remove decor", "Y - Shift Tile ID's", "U - Enter bounding box edit mode", "P - Print the number of tiles in the tileset", "N - Generate New Map", "P Q - Enter and exit edit mode", "Z/X - Decrease/Increase tile ID", "E - Export", "T - Toggle decoration editing"};
+					String[] lines = new String[]{ "P O - Print out player position", ", - Print mouse position", ".  - Click", "1/2 - Stratify on the X/Y axis", "R - Remove decor", "Y - Shift Tile ID's", "U - Enter bounding box edit mode", "P - Print the number of tiles in the tileset", "N - Generate New Map", "P Q - Enter and exit edit mode", "Z/X - Decrease/Increase tile ID", "E - Export", "T - Toggle decoration editing"};
 					Arrays.sort(lines);
 					for (String line : lines) {
 						help += "\n" + line;

@@ -1,5 +1,6 @@
 package TileMap;
 
+import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -72,6 +73,7 @@ public class TileMap {
 	protected int mouseX;
 	protected int mouseY;
 	protected boolean mouseDown;
+	protected int lastKeyPress = 0;
 	
 	protected int tileID;
 	
@@ -149,7 +151,7 @@ public class TileMap {
 			throw new Error();
 		}
 		ArrayList<String> mapFiles_ = new ArrayList<String>();
-		
+
 		if (numMaps == 1) {
 			mapFiles_.add("/Maps/" + sceneName + ".txt");
 		} else {
@@ -219,6 +221,7 @@ public class TileMap {
 	public void loadDecor(String decorFile_) {
 		decorFile = decorFile_;
 		int[][] tempData;
+		decorations = new ArrayList<Decoration>();
 		try {
 			tempData = parseFile(decorFile_, 1);
 		} catch (NullPointerException e) {
@@ -397,7 +400,7 @@ public class TileMap {
 		}
 		for (MapObject mo : objects) {
 			obs.add(mo);
-			obsY.add(mo.getBottomy());
+			obsY.add(mo.getVisualBottomy());
 		}
 		
 		for (int i = 0; i < obs.size(); i++) {
@@ -493,18 +496,26 @@ public class TileMap {
 			//Draw in map objects & layer 1;
 			toRemove = new ArrayList<Integer>();
 			for (int i = 0; i < obs.size(); i++) {
-				double y = obsY.get(i);
+				double boty = obsY.get(i);
 				Object object = obs.get(i);
-				if (y > (row)*tileSize && y <= (row+1)*tileSize) {
-					toRemove.add(i);
-					if (Decoration.class.isAssignableFrom(object.getClass())) {
-						drawDecor(g, (Decoration) object);
-					} else {
-						((MapObject)object).draw(g);
+				if (Decoration.class.isAssignableFrom(object.getClass())) {
+					//Draw decor
+					Decoration decor = ((Decoration)object);
+					Tile tile = tiles[decor.getTileID()-1];
+					int topy = (int)(boty - tile.getHeight());
+					if (boty > (row)*tileSize && boty <= (row+1)*tileSize) {
+						drawDecor(g, decor);
 					}
-				} else if (y >= (row+1)*tileSize) {
-					break;
+				} else {
+					//Draw map object
+					MapObject mo = (MapObject)object;
+					if (boty > (row)*tileSize && boty <= (row+1)*tileSize) {
+
+
+						mo.draw(g);
+					}
 				}
+
 			}
 			for (int i = toRemove.size()-1; i >= 0; i--) {
 				obs.remove((int)toRemove.get(i));
@@ -704,7 +715,7 @@ public class TileMap {
 	 * 
 	 * Array Items are to be separated by spaces. This method reads array items as strings.
 	 */
-	protected String[][] parseFileAsStrings(String s, int commentBufferLineCount) {
+	protected String[][] parseFileAsStrings(String s, int commentBufferLineCount, boolean includeResidual) {
 		try {
 			// Read in the file!
 			InputStream in = getClass().getResourceAsStream(s);
@@ -728,10 +739,21 @@ public class TileMap {
 				String line = br.readLine();
 				String[] parsedLine = line.split(split_regex);
 				for (int col = 0; col < tempNumCol; col++) {
-					try {
-						returnArray[row][col] = parsedLine[col];
-					} catch (ArrayIndexOutOfBoundsException e) {
-						returnArray[row][col] = returnArray[row][col-1];
+					if (includeResidual && col == tempNumCol - 1) {
+						String residual = "";
+						for (int i = col; i < parsedLine.length; i++) {
+							residual += parsedLine[i];
+							if (i != parsedLine.length - 1) {
+								residual += " ";
+							}
+						}
+						returnArray[row][col] = residual;
+					} else {
+						try {
+							returnArray[row][col] = parsedLine[col];
+						} catch (ArrayIndexOutOfBoundsException e) {
+							returnArray[row][col] = returnArray[row][col-1];
+						}
 					}
 				}
 			}
@@ -842,8 +864,13 @@ public class TileMap {
 			stratifyX = !stratifyX;
 		} else if (k == KeyEvent.VK_2 && editing) {
 			stratifyY = !stratifyY;
+		} else if (k == KeyEvent.VK_PERIOD && editing) {
+			mouseDown = true;
+		} else if (k == KeyEvent.VK_COMMA && editing) {
+			System.out.println((x + mouseX) + ":" + (y + mouseY));
 		}
 		
+		lastKeyPress = k;
 	}
 	
 	public void keyReleased(int k) {
@@ -851,6 +878,8 @@ public class TileMap {
 			tileNavDirection = 0;
 		} else if (k == KeyEvent.VK_Z) {
 			tileNavDirection = 0;
+		} else if (k == KeyEvent.VK_PERIOD && editing) {
+			mouseDown = false;
 		}
 	}
 	
@@ -866,6 +895,10 @@ public class TileMap {
 					map[row][col] = defaultFill;
 				}
 			}
+			
+			ArrayList<Integer> temp = new ArrayList<Integer>();
+			temp.add(width);
+			mapLengths = temp;
 			
 			generateMapData();
 		} catch (NumberFormatException e) {
@@ -1031,7 +1064,7 @@ public class TileMap {
 					mouseDown = false;
     			}
     		} else if (editingMode == 0) {
-    			setMapTile((int)((y + mouseY + yOffset)/tileSize), (int)((x + mouseX + xOffset)/tileSize), tileID);			
+    			setMapTile((int)((y + mouseY)/tileSize), (int)((x + mouseX)/tileSize), tileID);			
     		}
     	}
 	}

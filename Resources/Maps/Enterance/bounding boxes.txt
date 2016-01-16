@@ -1,0 +1,11 @@
+Bounding Boxes Yay (xpos ypos xlen ylen tag)
+5
+8
+194 125 12  139 null
+293 126 11  136 null
+196 107 102 18  null
+95  186 98  20  null
+300 177 124 29  null
+400 200 20  20  null
+80  200 20  20  null
+0   360 20  60  ignore goto left North_Room 180 380

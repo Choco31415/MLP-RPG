@@ -70,7 +70,7 @@ public class MapObjectAnimatable extends MapObject{
 		} else {
 			g.drawImage(
 					costume,
-					(int)(x - xmap - width / 2 + width + xOffset),
+					(int)(x - xmap + width / 2 + xOffset),
 					(int)(y - ymap - height / 2 + yOffset),
 					-width,
 					height,

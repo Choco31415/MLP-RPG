@@ -1,7 +1,13 @@
 Developer Controls:
-Ctr q - Enter and exit edit mode
-E - Export map
-R - Export compressed map
+.  - Click
+1/2 - Stratify on the X/Y axis
+E - Export
+N - Generate New Map
+P - Print the number of tiles in the tileset
+P O - Print out player position
+P Q - Enter and exit edit mode
+R - Remove decor
 T - Toggle decoration editing
-Y - Export decorations
+U - Enter bounding box edit mode
+Y - Shift Tile ID's
 Z/X - Decrease/Increase tile ID

@@ -1,9 +1,11 @@
 package Entity;
 
 import java.awt.Graphics2D;
+import java.util.ArrayList;
 
 import GameState.GameState;
 import Main.GamePanel;
+import TileMap.BoundingBox;
 import TileMap.TileMap;
 import TileMap.TileMapWithBB;
 
@@ -27,8 +29,12 @@ public class Player extends MapObjectAnimatable {
 	
 	int frame = 0;
 	
+	private String nextRoom;
+	private int nextx;
+	private int nexty;
+	
 	public Player(TileMapWithBB tm_, GameState level_) {
-		super(tm_, "Fluttershy", 20, 20, 0, -6, level_, 32);
+		super(tm_, "Fluttershy", 20, 8, 0, -10, level_, 32);
 		health = 1;
 	}
 	
@@ -135,63 +141,54 @@ public class Player extends MapObjectAnimatable {
 		}
 	}
 	
-	/*	public void setCostume() {
-		int frame_limit = 5;
-		if (prev_dx != dx) {
-			frame = frame_limit;
-		} else if (prev_dy != dy) {
-			frame = frame_limit;
-		}
-		if (frame >= frame_limit) {
-			frame = 0;
-			if ((dx == 0) && (dy == 0)) {
-				//Test standing still
-				if (prev_dy > 0) {
-					setCostume(0, 4);
-				} else if (prev_dy < 0) {
-					setCostume(0, 7);
-				} else if (prev_dx != 0) {
-					setCostume(0, 0);
-					if (prev_dx < 0) {
-						facingRight = true;
-					} else if (prev_dx > 0) {
-						facingRight = false;
-					}
-				}
-			} else {
-				//Test moving
-				if (dy != 0) {
-					if (dy > 0) {
-						if (costumeCol == 4) {
-							if (animationUp) {
-								setCostume(0, 5);
-							} else {
-								setCostume(0, 6);
-							}
-							animationUp = !animationUp;
-						} else {
-							setCostume(0, 4);
-						}
-					} else {
-						if (costumeCol == 7) {
-							if (animationUp) {
-								setCostume(0, 8);
-							} else {
-								setCostume(0, 9);
-							}
-							animationUp = !animationUp;
-						} else {
-							setCostume(0, 7);
-						}
-					}
-				} else if (dx != 0) {
-					setCostume(0, (costumeCol + 1)%4);
-					facingRight = dx < 0;
- 				}
+	private void checkDoors() {
+		ArrayList<String> searchCriteria = new ArrayList<String>();
+		searchCriteria.add("ignore");
+		searchCriteria.add("goto");
+		ArrayList<BoundingBox> bbs = tileMap.getBoundingBoxesWhoseTagContains(searchCriteria);
+		
+		for (BoundingBox bb : bbs) {
+			if (bb.getRectangle().intersects(getRectangle())) {
+				//Potential option found for moving between rooms!
+				
+				break;
 			}
 		}
-	}*/
+	}
 	
+	private void checkRoomTransition() {
+		ArrayList<String> temp = new ArrayList<String>();
+		temp.add("ignore");
+		temp.add("goto");
+		ArrayList<BoundingBox> bbs = tileMap.getBoundingBoxesWhoseTagContains(temp);
+		for (BoundingBox bb : bbs) {
+
+			if (bb.getRectangle().contains(x, y)) {
+				String tag = bb.getTag();
+				int loc = tag.indexOf("goto");
+				tag = tag.substring(loc+5);
+				loc = tag.indexOf(" ");
+				String direction = tag.substring(0, loc);
+				if (collided && ((direction.equalsIgnoreCase("left") && dx < 0)
+						||(direction.equalsIgnoreCase("right") && dx > 0)
+						||(direction.equalsIgnoreCase("up") && dy < 0)
+						||(direction.equalsIgnoreCase("down") && dy > 0))) {
+					int loc2 = tag.indexOf(" ", loc+1);
+					String room = tag.substring(loc+1, loc2);
+					level.transition(2);
+					nextRoom = room;
+					loc = loc2;
+					loc2 = tag.indexOf(" ", loc+1);
+					int num = Integer.parseInt(tag.substring(loc+1, loc2));
+					nextx = num;
+					loc = loc2;
+					num = Integer.parseInt(tag.substring(loc+1));
+					nexty = num;
+				}
+			}
+		}
+	}
+
 	public void update() {
 		frame++;
 		getNextPosition();
@@ -200,6 +197,9 @@ public class Player extends MapObjectAnimatable {
 		setCostume();
 
 		setPosition(xtemp, ytemp);
+		checkRoomTransition();
+		
+		checkDoors();
 		
 		// check if done flinching
 		if(flinching) {
@@ -211,9 +211,7 @@ public class Player extends MapObjectAnimatable {
 			}
 		}
 		
-		int newX = (int)(x-GamePanel.WIDTH/2);
-		int newY = (int)(y-GamePanel.HEIGHT/2 - 20);
-		tileMap.setPosition(newX, newY);
+		scroll();
 		
 		for (int[] tile : tilesToDestroy) {
 			tileMap.setMapTile(tile[0], tile[1], 0);
@@ -224,6 +222,12 @@ public class Player extends MapObjectAnimatable {
 		tilesToDestroy.clear();
 		
 		setMapPosition();
+	}
+	
+	public void scroll() {
+		int newX = (int)(x-GamePanel.WIDTH/2);
+		int newY = (int)(y-GamePanel.HEIGHT/2 - 20);
+		tileMap.setPosition(newX, newY);
 	}
 	
 	public void draw(Graphics2D g) {
@@ -260,5 +264,11 @@ public class Player extends MapObjectAnimatable {
 	@Override
 	public void setDown(boolean b) {
 		super.setDown(b);
+	}
+	
+	public void transition() {
+		tileMap.loadSceneLazy(nextRoom, 1);
+		x = nextx;
+		y = nexty;
 	}
 }
